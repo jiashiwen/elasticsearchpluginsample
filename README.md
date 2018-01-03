@@ -2,6 +2,21 @@
 
 ### elasticsearch 插件demo
 
+本例包含三个脚本插件
+* MyFirstPlugin
+该插件仅用于了解基本plugin结构，es加载时只输出一段log
+
+* MyNativeScriptPlugin
+该插件通过NativeScriptFactory实现简单的功能，计算给定字段（String类型）的字符长度并加上"add"参数的值作为_score
+
+* fieldaddScriptPlugin
+遵循elasticsearch5.6.X版本的插件规范，实现指定数组字段相加并添加并与给定参数相加功能
+
+* 三个插件在编译时需要指定pom.xml文件中的配置项
+```
+<elasticsearch.plugin.classname>red.shiwen.firestEsPlugin.fieldaddScriptPlugin</elasticsearch.plugin.classname>
+```
+
 ### 部署方法
 ```
 mvn clean install 
@@ -46,7 +61,7 @@ PUT hockey/player/_bulk?refresh
 {"first":"joe","last":"colborne","goals":[3,18,13],"assists":[6,20,24],"gp":[26,67,82],"born":"1990/01/30"}
 ```
 
-* 查询语句
+* MyNativeScriptPlugin 查询语句
 ```
 GET hockey/_search
 {
@@ -73,3 +88,42 @@ GET hockey/_search
 ```
 
 修改"params"中"add"的值，观察返回结果中"_score"的变化
+
+
+* fieldaddScriptPlugin 查询语句
+```
+GET hockey/_search
+{
+  "query": {
+    "function_score": {
+      "query": {
+        "match": {
+          "first": "sam"
+        }
+      },
+      "functions": [
+        {
+          "script_score": {
+            "script": {
+              "source": "example_add",
+              "lang": "expert_scripts",
+              "params": {
+                "fieldname": "goals",
+                "inc": 2
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+修改"params"中"inc"的值，观察返回结果中"_score"的变化
+
+
+#### 参考文档
+http://cwiki.apachecn.org/pages/viewpage.action?pageId=9405376
+https://programtalk.com/java-api-usage-examples/org.elasticsearch.script.ScriptEngineService/
+
+
